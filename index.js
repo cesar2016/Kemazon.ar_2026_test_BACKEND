@@ -1,0 +1,40 @@
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const path = require('path');
+
+const authRoutes = require('./routes/auth');
+const userRoutes = require('./routes/users');
+const productRoutes = require('./routes/products');
+const questionRoutes = require('./routes/questionRoutes');
+const categoryRoutes = require('./routes/categoryRoutes');
+
+const app = express();
+const port = process.env.PORT || 5000;
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// Serve static files from uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/questions', questionRoutes);
+app.use('/api/categories', categoryRoutes);
+
+app.get('/', (req, res) => {
+    res.send('Kemazon.ar API Running - Red & Minimalist');
+});
+
+
+
+// Start Server
+app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+});
+
+module.exports = app;
