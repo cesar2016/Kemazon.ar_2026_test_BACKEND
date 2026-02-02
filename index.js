@@ -30,6 +30,9 @@ app.get('/', (req, res) => {
     res.send('Kemazon.ar API Running - Red & Minimalist');
 });
 
+const socialRoutes = require('./routes/socialRoutes');
+app.use('/social', socialRoutes);
+
 
 
 // Start Server
