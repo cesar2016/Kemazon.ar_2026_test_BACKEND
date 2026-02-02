@@ -14,6 +14,10 @@ const port = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors());
+
+// Trust Proxy for Render/Vercel (needed for proper protocol detection)
+app.set('trust proxy', 1);
+
 app.use(express.json());
 
 // Serve static files from uploads directory

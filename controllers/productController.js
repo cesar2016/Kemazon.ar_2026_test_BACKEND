@@ -1,35 +1,26 @@
 const prisma = require('../prismaClient');
-const sharp = require('sharp');
-const path = require('path');
-const fs = require('fs');
 
-// Helper to process and save image
+const cloudinary = require('../config/cloudinaryConfig');
+
+// Helper to process and save image to Cloudinary
 const processAndSaveImage = async (buffer) => {
-    try {
-        const filename = `img-${Date.now()}-${Math.round(Math.random() * 1E9)}.jpeg`;
-        const uploadPath = path.join(__dirname, '../uploads', filename);
-
-        // Ensure uploads directory exists
-        const dir = path.join(__dirname, '../uploads');
-        if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir, { recursive: true });
-        }
-
-        console.log('Processing image with Sharp...');
-        await sharp(buffer)
-            .resize(1000, 1000, { // Max dimensions, maintain aspect ratio
-                fit: 'inside',
-                withoutEnlargement: true
-            })
-            .toFormat('jpeg', { quality: 80 })
-            .toFile(uploadPath);
-
-        console.log('Image saved to:', uploadPath);
-        return `/uploads/${filename}`;
-    } catch (error) {
-        console.error('Error processing image:', error);
-        throw error;
-    }
+    return new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+            {
+                folder: 'kemazon-products',
+                format: 'jpg',
+                transformation: [
+                    { width: 1000, height: 1000, crop: 'limit' },
+                    { quality: 'auto' }
+                ]
+            },
+            (error, result) => {
+                if (error) return reject(error);
+                resolve(result.secure_url);
+            }
+        );
+        uploadStream.end(buffer);
+    });
 };
 
 exports.createProduct = async (req, res) => {
