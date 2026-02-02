@@ -33,6 +33,9 @@ router.get('/share/:id', async (req, res) => {
             ? mainImage
             : `${protocol}://${host}${mainImage}`;
 
+        // Self URL for crawlers (so they keep reading this metadata)
+        const selfUrl = `${protocol}://${host}${req.originalUrl}`;
+
         const html = `
             <!DOCTYPE html>
             <html lang="es">
@@ -42,14 +45,14 @@ router.get('/share/:id', async (req, res) => {
                 
                 <!-- Open Graph / Facebook -->
                 <meta property="og:type" content="website">
-                <meta property="og:url" content="${targetUrl}">
+                <meta property="og:url" content="${selfUrl}">
                 <meta property="og:title" content="${product.name} | Kemazon.ar">
                 <meta property="og:description" content="${product.description ? product.description.substring(0, 200) : 'Mira este increíble producto en Kemazon.ar'}">
                 <meta property="og:image" content="${imageUrl}">
 
                 <!-- Twitter -->
                 <meta property="twitter:card" content="summary_large_image">
-                <meta property="twitter:url" content="${targetUrl}">
+                <meta property="twitter:url" content="${selfUrl}">
                 <meta property="twitter:title" content="${product.name} | Kemazon.ar">
                 <meta property="twitter:description" content="${product.description ? product.description.substring(0, 200) : 'Mira este increíble producto en Kemazon.ar'}">
                 <meta property="twitter:image" content="${imageUrl}">
