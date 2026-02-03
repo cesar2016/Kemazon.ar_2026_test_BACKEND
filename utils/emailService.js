@@ -15,7 +15,8 @@ const sendEmail = async (to, subject, html) => {
                 pass: process.env.EMAIL_PASS
             },
             // Add connection timeout setting
-            connectionTimeout: 10000, // 10 seconds
+            connectionTimeout: 30000, // 30 seconds
+            family: 4,    // Force IPv4
             logger: true, // Log to console
             debug: true   // Include debug info
         });
