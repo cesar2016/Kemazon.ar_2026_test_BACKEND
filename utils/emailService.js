@@ -1,67 +1,30 @@
+const { Resend } = require('resend');
 
-const nodemailer = require('nodemailer');
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const sendEmail = async (to, subject, html) => {
     try {
-        console.log(`[Email Debug] Attempting to connect to Gmail...`);
-        console.log(`[Email Debug] User: ${process.env.EMAIL_USER}`);
+        console.log(`[Email Debug] Attempting to send email via Resend...`);
+        console.log(`[Email Debug] To: ${to}`);
 
-        const transporter = nodemailer.createTransport({
-            host: 'smtp.gmail.com',
-            port: 587,
-            secure: false, // true for 465, false for other ports (587 uses STARTTLS)
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS
-            },
-            // Add connection timeout setting
-            connectionTimeout: 30000, // 30 seconds
-            family: 4,    // Force IPv4
-            logger: true, // Log to console
-            debug: true   // Include debug info
+        // Note: 'onboarding@resend.dev' only allows sending to the account owner's email address
+        // until you verify a custom domain in the Resend dashboard.
+        const { data, error } = await resend.emails.send({
+            from: 'Kemazon <onboarding@resend.dev>',
+            to: [to],
+            subject: subject,
+            html: html,
         });
 
-        // Verify connection configuration
-        await new Promise((resolve, reject) => {
-            transporter.verify(function (error, success) {
-                if (error) {
-                    console.error('[Email Debug] Connection Verification Failed:', error);
-                    reject(error);
-                } else {
-                    console.log('[Email Debug] Server is ready to take our messages');
-                    resolve(success);
-                }
-            });
-        });
+        if (error) {
+            console.error('[Email Debug] Resend API Error:', error);
+            return false;
+        }
 
-        const mailOptions = {
-            from: process.env.EMAIL_USER,
-            to,
-            subject,
-            html
-        };
-
-        const info = await transporter.sendMail(mailOptions);
-        console.log(`[Email Debug] Email sent successfully: ${info.messageId}`);
+        console.log('[Email Debug] Email sent successfully:', data);
         return true;
-    } catch (error) {
-        console.error(`[Email Debug] FATAL ERROR sending email:`, error);
-
-        // Detailed error logging
-        if (error.code === 'ETIMEDOUT') {
-            console.error('[Email Debug] Connection timed out. Check firewall or port block.');
-        }
-
-        // If credentials are not set, log the email content for dev/testing
-        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-            console.log('--- MOCK EMAIL (Fallback) ---');
-            console.log(`To: ${to}`);
-            console.log(`Subject: ${subject}`);
-            console.log(`HTML: ${html}`);
-            console.log('--- END MOCK ---');
-            return true; // Pretend it worked
-        }
-
+    } catch (err) {
+        console.error('[Email Debug] Unexpected error:', err);
         return false;
     }
 };
