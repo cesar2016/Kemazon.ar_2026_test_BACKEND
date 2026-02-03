@@ -54,8 +54,16 @@ router.get('/share/:id', async (req, res) => {
 
         // Self URL for crawlers
         const selfUrl = `${protocol}://${host}${req.originalUrl}`;
-        const description = product.description ? product.description.substring(0, 200) : 'Mira este increíble producto en Kemazon.ar';
-        const title = `${product.name} | Kemazon.ar`;
+
+        // Persuasive Marketing Logic
+        const price = parseFloat(product.price).toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 });
+        const rawDescription = product.description || '';
+        const shortDesc = rawDescription.length > 100 ? rawDescription.substring(0, 100) + '...' : rawDescription;
+
+        // Emojis for rotation to keep it fresh (optional, but sticking to one solid format for now)
+        const description = `🔥 ¡Oferta Imperdible! ${product.name} a solo ${price} 😱. ${shortDesc} 👉 ¡Entrá ya y compralo en Kemazon.ar antes de que vuele! 🚀`;
+
+        const title = `${product.name} | ${price} | Kemazon.ar 🇦🇷`;
 
         const html = `
             <!DOCTYPE html>

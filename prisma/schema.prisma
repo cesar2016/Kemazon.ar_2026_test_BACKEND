@@ -22,12 +22,27 @@ model User {
   whatsapp  String?  @db.VarChar(50)
   avatar    String?
 
+  // Role and Status
+  roleId    Int      @default(2) @map("role_id")
+  status    Boolean  @default(true)
+
+  role             Role      @relation(fields: [roleId], references: [id])
   products         Product[]
   sentMessages     Message[] @relation("SentMessages")
   receivedMessages Message[] @relation("ReceivedMessages")
   questions        Question[]
 
   @@map("users")
+}
+
+model Role {
+  id    Int    @id @default(autoincrement())
+  name  String @unique @db.VarChar(50) 
+  // 1: Administrador, 2: Usuario
+
+  users User[]
+
+  @@map("roles")
 }
 
 model Product {
