@@ -9,6 +9,8 @@ exports.getAllUsers = async (req, res) => {
                 id: true,
                 username: true,
                 email: true,
+                roleId: true,
+                status: true,
                 createdAt: true
             }
         });
@@ -36,6 +38,8 @@ exports.getUserById = async (req, res) => {
                 city: true,
                 whatsapp: true,
                 avatar: true,
+                roleId: true, // Important for AuthContext
+                status: true,
                 products: true // Opcional: incluir productos del usuario
             }
         });
@@ -159,6 +163,51 @@ exports.deleteUser = async (req, res) => {
         });
 
         res.json({ msg: 'User removed' });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};
+// Cambiar estado del usuario (Bloquear/Desbloquear)
+exports.toggleUserStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body; // Expecting boolean
+
+        if (typeof status !== 'boolean') {
+            return res.status(400).json({ msg: 'Invalid status format' });
+        }
+
+        const updatedUser = await prisma.user.update({
+            where: { id: parseInt(id) },
+            data: { status },
+            select: { id: true, username: true, status: true }
+        });
+
+        res.json(updatedUser);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};
+
+// Cambiar rol del usuario
+exports.updateUserRole = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { roleId } = req.body; // Expecting integer (1=Admin, 2=User)
+
+        if (!roleId || typeof roleId !== 'number') {
+            return res.status(400).json({ msg: 'Invalid roleId' });
+        }
+
+        const updatedUser = await prisma.user.update({
+            where: { id: parseInt(id) },
+            data: { roleId },
+            select: { id: true, username: true, roleId: true }
+        });
+
+        res.json(updatedUser);
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
