@@ -23,6 +23,54 @@ const processAndSaveImage = async (buffer) => {
     });
 };
 
+exports.markAsSold = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const productId = parseInt(id);
+
+        if (!productId) return res.status(400).json({ msg: 'Product ID required' });
+
+        // 1. Get product to verify owner
+        const product = await prisma.product.findUnique({
+            where: { id: productId }
+        });
+
+        if (!product) return res.status(404).json({ msg: 'Producto no encontrado' });
+        if (product.userId !== req.user.id) return res.status(403).json({ msg: 'No autorizado' });
+        if (!product.isActive) return res.status(400).json({ msg: 'El producto ya ha sido marcado como vendido' });
+
+        // 2. Create "Manual Sale" Order
+        await prisma.order.create({
+            data: {
+                buyerId: null, // Unknown buyer for manual sale
+                sellerId: req.user.id,
+                total: product.price,
+                status: 'APPROVED',
+                paymentId: 'MANUAL',
+                items: {
+                    create: {
+                        productId: product.id,
+                        title: product.name,
+                        quantity: 1,
+                        price: product.price
+                    }
+                }
+            }
+        });
+
+        // 3. Mark product as sold (Soft Delete)
+        await prisma.product.update({
+            where: { id: productId },
+            data: { isActive: false }
+        });
+
+        res.json({ msg: 'Producto marcado como vendido' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Error marking product as sold');
+    }
+};
+
 exports.createProduct = async (req, res) => {
     try {
         const { name, description, price, userId, categoryId } = req.body;
@@ -64,6 +112,7 @@ exports.createProduct = async (req, res) => {
 exports.getAllProducts = async (req, res) => {
     try {
         const products = await prisma.product.findMany({
+            where: { isActive: true },
             include: {
                 user: {
                     select: {
@@ -95,7 +144,12 @@ exports.getProductById = async (req, res) => {
                 user: {
                     select: {
                         username: true,
-                        email: true
+                        email: true,
+                        whatsapp: true, // Also good to have for 'Arrange with Seller'
+                        paymentMethods: {
+                            where: { isActive: true },
+                            select: { provider: true }
+                        }
                     }
                 },
                 category: true
@@ -118,7 +172,8 @@ exports.getProductsByUserId = async (req, res) => {
         const { userId } = req.params;
         const products = await prisma.product.findMany({
             where: {
-                userId: parseInt(userId)
+                userId: parseInt(userId),
+                isActive: true
             },
             orderBy: {
                 createdAt: 'desc'

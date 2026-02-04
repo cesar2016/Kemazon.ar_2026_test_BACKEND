@@ -9,6 +9,9 @@ exports.getAllUsers = async (req, res) => {
                 id: true,
                 username: true,
                 email: true,
+                fullName: true,
+                whatsapp: true,
+                avatar: true,
                 roleId: true,
                 status: true,
                 createdAt: true

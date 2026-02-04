@@ -31,6 +31,9 @@ model User {
   sentMessages     Message[] @relation("SentMessages")
   receivedMessages Message[] @relation("ReceivedMessages")
   questions        Question[]
+  paymentMethods   PaymentMethod[]
+  buyOrders        Order[]       @relation("BuyerOrders")
+  sellOrders       Order[]       @relation("SellerOrders")
 
   @@map("users")
 }
@@ -53,11 +56,13 @@ model Product {
   price       Decimal  @db.Decimal(10, 2)
   images      String[]
   categoryId  Int?     @map("category_id")
+  isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at")
 
   user     User?     @relation(fields: [userId], references: [id])
   category Category? @relation(fields: [categoryId], references: [id])
   questions Question[]
+  orderItems OrderItem[]
 
   @@map("products")
 }
@@ -97,4 +102,49 @@ model Question {
   user    User    @relation(fields: [userId], references: [id])
 
   @@map("questions")
+}
+
+model PaymentMethod {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  provider    String   @db.VarChar(50) // 'MERCADOPAGO', 'UALA', 'PAYPAL'
+  accessToken String   @map("access_token") @db.Text
+  publicKey   String?  @map("public_key") @db.Text
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, provider]) // Un token por proveedor por usuario
+  @@map("payment_methods")
+}
+
+model Order {
+  id          Int      @id @default(autoincrement())
+  buyerId     Int?     @map("buyer_id") // Can be null for manual sales if buyer unknown
+  sellerId    Int      @map("seller_id")
+  total       Decimal  @db.Decimal(10, 2)
+  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED, MANUAL
+  paymentId   String?  @map("payment_id") // MercadoPago Payment ID
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  buyer       User?    @relation("BuyerOrders", fields: [buyerId], references: [id])
+  seller      User     @relation("SellerOrders", fields: [sellerId], references: [id])
+  items       OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  orderId   Int     @map("order_id")
+  productId Int     @map("product_id")
+  title     String  @db.VarChar(255)
+  quantity  Int
+  price     Decimal @db.Decimal(10, 2)
+
+  order     Order   @relation(fields: [orderId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
 }

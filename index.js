@@ -30,6 +30,15 @@ app.use('/api/products', productRoutes);
 app.use('/api/questions', questionRoutes);
 app.use('/api/categories', categoryRoutes);
 
+const paymentRoutes = require('./routes/paymentRoutes');
+app.use('/api/payment', paymentRoutes);
+
+const paymentMethodRoutes = require('./routes/paymentMethodRoutes');
+app.use('/api/payment-methods', paymentMethodRoutes);
+
+const orderRoutes = require('./routes/orderRoutes');
+app.use('/api/orders', orderRoutes);
+
 app.get('/', (req, res) => {
     res.send('Kemazon.ar API Running - Red & Minimalist');
 });

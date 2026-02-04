@@ -29,7 +29,9 @@ router.post('/', upload.array('images', 6), productController.createProduct);
 router.get('/', productController.getAllProducts);
 router.get('/:id', productController.getProductById);
 router.get('/user/:userId', productController.getProductsByUserId);
+console.log('mark-sold route registered'); // Debug log
 router.delete('/:id', productController.deleteProduct);
 router.put('/:id', upload.array('images', 6), productController.updateProduct);
+router.post('/:id/mark-sold', require('../middlewares/authMiddleware'), productController.markAsSold);
 
 module.exports = router;
