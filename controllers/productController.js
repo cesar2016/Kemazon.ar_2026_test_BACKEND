@@ -199,10 +199,72 @@ exports.recordVisit = async (req, res) => {
     }
 };
 
+exports.toggleLike = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const productId = parseInt(id);
+        const userId = req.user ? req.user.id : null;
+        const { guestId } = req.body;
+
+        if (!productId) return res.status(400).json({ msg: 'Product ID required' });
+        if (!userId && !guestId) return res.status(400).json({ msg: 'User ID or Guest ID required' });
+
+        // Check if like exists
+        const existingLike = await prisma.productLike.findFirst({
+            where: {
+                productId,
+                OR: [
+                    { userId: userId || undefined },
+                    { guestId: guestId || undefined }
+                ]
+            }
+        });
+
+        let isLiked = false;
+
+        if (existingLike) {
+            // Unlike
+            await prisma.productLike.delete({ where: { id: existingLike.id } });
+            isLiked = false;
+        } else {
+            // Like
+            await prisma.productLike.create({
+                data: {
+                    productId,
+                    userId,
+                    guestId
+                }
+            });
+            isLiked = true;
+        }
+
+        // Return updated stats
+        const total = await prisma.productLike.count({ where: { productId } });
+        const users = await prisma.productLike.count({ where: { productId, userId: { not: null } } });
+        const guests = await prisma.productLike.count({ where: { productId, userId: null } });
+
+        res.json({ isLiked, stats: { total, users, guests } });
+
+    } catch (err) {
+        console.error('Error toggling like:', err);
+        res.status(500).json({ msg: 'Server Error' });
+    }
+};
+
 exports.getProductById = async (req, res) => {
     try {
         const { id } = req.params;
         const productId = parseInt(id);
+
+        // Check for current user/guest to determine "isLiked"
+        // Note: In a GET request, we might not have guestId easily unless passed as query param.
+        // For simplicity, we can fetch 'isLiked' in a separate call or rely on the frontend to check its own state
+        // OR we can try to get it if headers/query present.
+
+        // Let's rely on frontend handling "isLiked" initial state via a separate check or just assume false until user interaction?
+        // Better: Allow passing guestId in query for getProductById.
+        const userId = req.user ? req.user.id : null;
+        const guestId = req.query.guestId;
 
         const product = await prisma.product.findUnique({
             where: {
@@ -233,17 +295,72 @@ exports.getProductById = async (req, res) => {
         const userVisits = await prisma.productVisit.count({ where: { productId, userId: { not: null } } });
         const guestVisits = await prisma.productVisit.count({ where: { productId, userId: null } });
 
+        // Get Like Stats
+        const totalLikes = await prisma.productLike.count({ where: { productId } });
+        const userLikes = await prisma.productLike.count({ where: { productId, userId: { not: null } } });
+        const guestLikes = await prisma.productLike.count({ where: { productId, userId: null } });
+
+        // Check if liked by current requester
+        let isLiked = false;
+        if (userId || guestId) {
+            const likeCheck = await prisma.productLike.findFirst({
+                where: {
+                    productId,
+                    OR: [
+                        { userId: userId || undefined },
+                        { guestId: guestId || undefined }
+                    ]
+                }
+            });
+            isLiked = !!likeCheck;
+        }
+
         res.json({
             ...product,
             stats: {
-                total: totalVisits,
-                users: userVisits,
-                guests: guestVisits
+                visits: {
+                    total: totalVisits,
+                    users: userVisits,
+                    guests: guestVisits
+                },
+                likes: {
+                    total: totalLikes,
+                    users: userLikes,
+                    guests: guestLikes,
+                    isLiked
+                }
             }
         });
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
+    }
+};
+
+exports.getProductLikes = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const productId = parseInt(id);
+
+        const likes = await prisma.productLike.findMany({
+            where: { productId },
+            include: {
+                user: {
+                    select: {
+                        username: true,
+                        avatar: true
+                    }
+                }
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        });
+
+        res.json(likes);
+    } catch (err) {
+        console.error('Error fetching likes:', err);
+        res.status(500).json({ msg: 'Server Error' });
     }
 };
 

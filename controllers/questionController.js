@@ -31,6 +31,13 @@ exports.createQuestion = async (req, res) => {
                 content,
                 productId: parseInt(productId),
                 userId
+            },
+            include: {
+                user: {
+                    select: {
+                        username: true
+                    }
+                }
             }
         });
 
@@ -77,14 +84,7 @@ exports.getQuestionsByProduct = async (req, res) => {
             }
         });
 
-        const maskedQuestions = questions.map(q => ({
-            ...q,
-            user: {
-                username: maskUsername(q.user.username)
-            }
-        }));
-
-        res.json(maskedQuestions);
+        res.json(questions);
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');

@@ -46,13 +46,19 @@ const upload = multer({
 // Routes
 router.post('/', upload.array('images', 6), productController.createProduct);
 router.get('/', productController.getAllProducts);
-router.get('/:id', productController.getProductById);
+router.get('/:id', require('../middlewares/authMiddleware').optionalAuth, productController.getProductById);
 router.get('/user/:userId', productController.getProductsByUserId);
 console.log('mark-sold route registered'); // Debug log
 router.delete('/:id', productController.deleteProduct);
 router.put('/:id', upload.array('images', 6), productController.updateProduct);
 // Visit recording route (Optional Auth)
 router.post('/:id/visit', require('../middlewares/authMiddleware').optionalAuth, productController.recordVisit);
+
+// Like toggle route (Optional Auth)
+router.post('/:id/like', require('../middlewares/authMiddleware').optionalAuth, productController.toggleLike);
+
+// Get Likes List
+router.get('/:id/likes', productController.getProductLikes);
 
 router.post('/:id/mark-sold', require('../middlewares/authMiddleware'), productController.markAsSold);
 

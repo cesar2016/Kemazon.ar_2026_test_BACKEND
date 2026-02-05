@@ -36,6 +36,7 @@ model User {
   sellOrders       Order[]       @relation("SellerOrders")
   notifications    UserNotification[]
   productVisits    ProductVisit[]
+  productLikes     ProductLike[]
 
   @@map("users")
 }
@@ -66,6 +67,7 @@ model Product {
   questions Question[]
   orderItems OrderItem[]
   visits     ProductVisit[]
+  likes      ProductLike[]
 
   @@map("products")
 }
@@ -188,4 +190,18 @@ model ProductVisit {
   user    User?   @relation(fields: [userId], references: [id])
 
   @@map("product_visits")
+}
+
+model ProductLike {
+  id        Int      @id @default(autoincrement())
+  productId Int      @map("product_id")
+  userId    Int?     @map("user_id") // Nullable for guests
+  guestId   String?  @map("guest_id") @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  product Product @relation(fields: [productId], references: [id])
+  user    User?   @relation(fields: [userId], references: [id])
+
+  @@unique([productId, userId, guestId]) // Ensure unique like per user/guest per product
+  @@map("product_likes")
 }
