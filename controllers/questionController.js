@@ -108,3 +108,68 @@ exports.answerQuestion = async (req, res) => {
         res.status(500).send('Server Error');
     }
 };
+
+// Get questions received on my products (for me to answer)
+exports.getReceivedQuestions = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        // Find products belonging to user
+        const questions = await prisma.question.findMany({
+            where: {
+                product: {
+                    userId: userId
+                }
+            },
+            include: {
+                product: {
+                    select: {
+                        id: true,
+                        name: true,
+                        images: true
+                    }
+                },
+                user: {
+                    select: {
+                        username: true
+                    }
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        res.json(questions);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};
+
+// Get questions I asked on other products
+exports.getAskedQuestions = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const questions = await prisma.question.findMany({
+            where: {
+                userId: userId
+            },
+            include: {
+                product: {
+                    select: {
+                        id: true,
+                        name: true,
+                        images: true,
+                        userId: true // To check seller info if needed
+                    }
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        res.json(questions);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};
