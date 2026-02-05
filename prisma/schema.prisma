@@ -35,6 +35,7 @@ model User {
   buyOrders        Order[]       @relation("BuyerOrders")
   sellOrders       Order[]       @relation("SellerOrders")
   notifications    UserNotification[]
+  productVisits    ProductVisit[]
 
   @@map("users")
 }
@@ -64,6 +65,7 @@ model Product {
   category Category? @relation(fields: [categoryId], references: [id])
   questions Question[]
   orderItems OrderItem[]
+  visits     ProductVisit[]
 
   @@map("products")
 }
@@ -173,4 +175,17 @@ model UserNotification {
   notificationType NotificationType @relation(fields: [notificationTypeId], references: [id])
 
   @@map("user_notifications")
+}
+
+model ProductVisit {
+  id        Int      @id @default(autoincrement())
+  productId Int      @map("product_id")
+  userId    Int?     @map("user_id") // Nullable for guests
+  guestId   String?  @map("guest_id") @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  product Product @relation(fields: [productId], references: [id])
+  user    User?   @relation(fields: [userId], references: [id])
+
+  @@map("product_visits")
 }

@@ -44,3 +44,29 @@ module.exports.verifyAdmin = function (req, res, next) {
 
     next();
 };
+
+module.exports.optionalAuth = function (req, res, next) {
+    // Get token from header
+    let token = req.header('x-auth-token');
+
+    // Check for Authorization header if x-auth-token is not present
+    if (!token && req.header('Authorization')) {
+        const authHeader = req.header('Authorization');
+        if (authHeader.startsWith('Bearer ')) {
+            token = authHeader.substring(7, authHeader.length);
+        }
+    }
+
+    if (!token) {
+        return next(); // Proceed without user (guest)
+    }
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = decoded.user;
+        next();
+    } catch (err) {
+        // If token invalid, proceed as guest (or fail? typically better to just ignore invalid token for optional auth)
+        next();
+    }
+};

@@ -51,6 +51,9 @@ router.get('/user/:userId', productController.getProductsByUserId);
 console.log('mark-sold route registered'); // Debug log
 router.delete('/:id', productController.deleteProduct);
 router.put('/:id', upload.array('images', 6), productController.updateProduct);
+// Visit recording route (Optional Auth)
+router.post('/:id/visit', require('../middlewares/authMiddleware').optionalAuth, productController.recordVisit);
+
 router.post('/:id/mark-sold', require('../middlewares/authMiddleware'), productController.markAsSold);
 
 module.exports = router;

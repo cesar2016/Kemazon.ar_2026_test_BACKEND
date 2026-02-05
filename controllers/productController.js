@@ -153,12 +153,60 @@ exports.getAllProducts = async (req, res) => {
     }
 };
 
+exports.recordVisit = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const productId = parseInt(id);
+        const userId = req.user ? req.user.id : null;
+        const { guestId } = req.body;
+
+        if (!productId) return res.status(400).json({ msg: 'Product ID required' });
+        if (!userId && !guestId) return res.status(400).json({ msg: 'User ID or Guest ID required' });
+
+        // Calculate 4 hours ago
+        const fourHoursAgo = new Date(new Date() - 4 * 60 * 60 * 1000);
+
+        // Check for recent visit
+        const recentVisit = await prisma.productVisit.findFirst({
+            where: {
+                productId,
+                createdAt: { gt: fourHoursAgo },
+                OR: [
+                    { userId: userId || undefined }, // undefined to skip if null
+                    { guestId: guestId || undefined }
+                ]
+            }
+        });
+
+        if (recentVisit) {
+            return res.status(200).json({ msg: 'Visit already recorded recently' });
+        }
+
+        // Record new visit
+        await prisma.productVisit.create({
+            data: {
+                productId,
+                userId,
+                guestId
+            }
+        });
+
+        res.status(201).json({ msg: 'Visit recorded' });
+
+    } catch (err) {
+        console.error('Error recording visit:', err);
+        res.status(500).json({ msg: 'Server Error' });
+    }
+};
+
 exports.getProductById = async (req, res) => {
     try {
         const { id } = req.params;
+        const productId = parseInt(id);
+
         const product = await prisma.product.findUnique({
             where: {
-                id: parseInt(id)
+                id: productId
             },
             include: {
                 user: {
@@ -180,7 +228,19 @@ exports.getProductById = async (req, res) => {
             return res.status(404).json({ msg: 'Product not found' });
         }
 
-        res.json(product);
+        // Get Visit Stats
+        const totalVisits = await prisma.productVisit.count({ where: { productId } });
+        const userVisits = await prisma.productVisit.count({ where: { productId, userId: { not: null } } });
+        const guestVisits = await prisma.productVisit.count({ where: { productId, userId: null } });
+
+        res.json({
+            ...product,
+            stats: {
+                total: totalVisits,
+                users: userVisits,
+                guests: guestVisits
+            }
+        });
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
