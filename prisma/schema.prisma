@@ -34,6 +34,7 @@ model User {
   paymentMethods   PaymentMethod[]
   buyOrders        Order[]       @relation("BuyerOrders")
   sellOrders       Order[]       @relation("SellerOrders")
+  notifications    UserNotification[]
 
   @@map("users")
 }
@@ -147,4 +148,29 @@ model OrderItem {
   product   Product @relation(fields: [productId], references: [id])
 
   @@map("order_items")
+}
+
+model NotificationType {
+  id               Int      @id @default(autoincrement())
+  nameNotification String   @unique @map("name_notification") @db.VarChar(50)
+  description      String?  @db.VarChar(255)
+
+  notifications    UserNotification[]
+
+  @@map("notification_types")
+}
+
+model UserNotification {
+  id                 Int      @id @default(autoincrement())
+  userId             Int      @map("id_user")
+  notificationTypeId Int      @map("id_notification_type")
+  message            String   @db.Text
+  isRead             Boolean  @default(false) @map("is_read")
+  relatedId          Int?     @map("related_id") // ID of related entity (product, order, etc.)
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  user             User             @relation(fields: [userId], references: [id])
+  notificationType NotificationType @relation(fields: [notificationTypeId], references: [id])
+
+  @@map("user_notifications")
 }

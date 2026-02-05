@@ -34,6 +34,22 @@ exports.createQuestion = async (req, res) => {
             }
         });
 
+        // Trigger 'query' notification for the SELLER
+        try {
+            const createNotification = require('../utils/notificationService');
+            // product.userId is the seller
+            if (product.userId) {
+                await createNotification(
+                    product.userId,
+                    'query',
+                    `Has recibido una nueva pregunta en tu publicación "${product.name}".`,
+                    product.id // Related ID is the product
+                );
+            }
+        } catch (notifError) {
+            console.error('Notification error:', notifError);
+        }
+
         res.json(question);
     } catch (err) {
         console.error(err.message);
@@ -100,6 +116,20 @@ exports.answerQuestion = async (req, res) => {
                 answer
             }
         });
+
+        // Trigger 'answer' notification for the ASKER
+        try {
+            const createNotification = require('../utils/notificationService');
+            // question.userId is the person who asked
+            await createNotification(
+                question.userId,
+                'answer',
+                `Han respondido tu pregunta en "${question.product.name}"`,
+                question.product.id
+            );
+        } catch (notifError) {
+            console.error('Notification error:', notifError);
+        }
 
         res.json(updatedQuestion);
 

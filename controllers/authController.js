@@ -70,6 +70,15 @@ exports.register = async (req, res) => {
             // Consider deleting the user or retrying, but for now we just return success but warn
         }
 
+        // Trigger 'Alta' notification
+        try {
+            const createNotification = require('../utils/notificationService');
+            // Notify the user themselves
+            await createNotification(newUser.id, 'Alta', '¡Bienvenido a Kemazon.ar! Gracias por unirte a nuestra comunidad.');
+        } catch (notifError) {
+            console.error('Notification error:', notifError);
+        }
+
         res.json({ msg: 'Registro exitoso. Por favor verifica tu correo para activar tu cuenta.', user: newUser });
 
     } catch (err) {

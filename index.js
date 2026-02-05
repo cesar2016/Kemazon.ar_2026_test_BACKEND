@@ -39,6 +39,9 @@ app.use('/api/payment-methods', paymentMethodRoutes);
 const orderRoutes = require('./routes/orderRoutes');
 app.use('/api/orders', orderRoutes);
 
+const notificationRoutes = require('./routes/notificationRoutes');
+app.use('/api/notifications', notificationRoutes);
+
 app.get('/', (req, res) => {
     res.send('Kemazon.ar API Running - Red & Minimalist');
 });

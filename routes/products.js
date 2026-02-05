@@ -6,8 +6,27 @@ const path = require('path');
 const fs = require('fs');
 
 // Configure Multer
-// Configure Multer - Memory Storage for validation and processing
-const storage = multer.memoryStorage();
+let storage;
+
+const hasCloudinary = process.env.CLOUDINARY_CLOUD_NAME &&
+    process.env.CLOUDINARY_API_KEY &&
+    process.env.CLOUDINARY_API_SECRET;
+
+if (hasCloudinary) {
+    // Memory Storage for Cloudinary
+    storage = multer.memoryStorage();
+} else {
+    // Disk Storage for Local
+    storage = multer.diskStorage({
+        destination: function (req, file, cb) {
+            cb(null, 'uploads/');
+        },
+        filename: function (req, file, cb) {
+            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+            cb(null, uniqueSuffix + path.extname(file.originalname));
+        }
+    });
+}
 
 const upload = multer({
     storage: storage,

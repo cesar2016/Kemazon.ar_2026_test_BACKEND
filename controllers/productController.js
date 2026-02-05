@@ -64,6 +64,19 @@ exports.markAsSold = async (req, res) => {
             data: { isActive: false }
         });
 
+        // Trigger 'manual_sale' notification
+        try {
+            const createNotification = require('../utils/notificationService');
+            await createNotification(
+                req.user.id,
+                'manual_sale',
+                `¡Venta registrada! Marcaste "${product.name}" como vendido manualmenter.`,
+                product.id
+            );
+        } catch (notifError) {
+            console.error('Notification error:', notifError);
+        }
+
         res.json({ msg: 'Producto marcado como vendido' });
     } catch (error) {
         console.error(error);
@@ -81,8 +94,15 @@ exports.createProduct = async (req, res) => {
         const images = [];
         if (req.files && req.files.length > 0) {
             for (const file of req.files) {
-                const savedPath = await processAndSaveImage(file.buffer);
-                images.push(savedPath);
+                if (file.path) {
+                    // Local storage usage: path relative like '/uploads/file.jpg'
+                    const localPath = `/uploads/${file.filename}`;
+                    images.push(localPath);
+                } else {
+                    // Memory storage (Cloudinary)
+                    const savedPath = await processAndSaveImage(file.buffer);
+                    images.push(savedPath);
+                }
             }
         }
 
@@ -104,8 +124,8 @@ exports.createProduct = async (req, res) => {
 
         res.json(newProduct);
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
+        console.error('Error in createProduct:', err);
+        res.status(500).json({ msg: 'Server Error', error: err.message });
     }
 };
 

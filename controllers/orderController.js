@@ -13,10 +13,43 @@ exports.confirmOrder = async (req, res) => {
             }
         });
 
-        // Also update the stock? For now we just mark as sold.
-        // Actually, if approved, we might want to decrease stock if we tracked it.
-        // Our simple model doesn't have quantity stock, just maybe active/inactive.
-        // For now, let's leave products active unless it's a unique item.
+        if (status === 'approved') {
+            try {
+                // Fetch full order with items to get product info
+                const fullOrder = await prisma.order.findUnique({
+                    where: { id: parseInt(orderId) },
+                    include: {
+                        items: true,
+                        seller: true,
+                        buyer: true
+                    }
+                });
+
+                const createNotification = require('../utils/notificationService');
+                const productName = fullOrder.items[0]?.title || 'Producto';
+
+                // Notify Seller (Sale)
+                await createNotification(
+                    fullOrder.sellerId,
+                    'sale',
+                    `¡Felicidades! Has vendido "${productName}" a ${fullOrder.buyer?.username || 'un usuario'}.`,
+                    fullOrder.id
+                );
+
+                // Notify Buyer (Buy)
+                if (fullOrder.buyerId) {
+                    await createNotification(
+                        fullOrder.buyerId,
+                        'buy',
+                        `¡Compra exitosa! Ya tienes "${productName}".`,
+                        fullOrder.id
+                    );
+                }
+
+            } catch (notifError) {
+                console.error('Notification error:', notifError);
+            }
+        }
 
         res.json(order);
     } catch (error) {
