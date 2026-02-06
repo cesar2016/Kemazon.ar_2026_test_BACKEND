@@ -413,8 +413,15 @@ exports.updateProduct = async (req, res) => {
         const processedNewImages = [];
         if (req.files && req.files.length > 0) {
             for (const file of req.files) {
-                const savedPath = await processAndSaveImage(file.buffer);
-                processedNewImages.push(savedPath);
+                if (file.path) {
+                    // Local storage
+                    const localPath = `/uploads/${file.filename}`;
+                    processedNewImages.push(localPath);
+                } else {
+                    // Cloudinary
+                    const savedPath = await processAndSaveImage(file.buffer);
+                    processedNewImages.push(savedPath);
+                }
             }
         }
 
